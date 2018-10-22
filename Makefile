@@ -14,6 +14,9 @@ riech-o-mat-backend: riech-o-mat-backend-iowarrior
 install-udev-rule:
 	cp 99-iowarrior.rules /etc/udev/rules.d/
 
+install-desktop-entry:
+	cp riech-o-mat.desktop ~/.local/share/applications/
+
 riech-o-mat.ico: riech-o-mat.svg
 	inkscape riech-o-mat.svg --export-dpi 240 --export-png riech-o-mat-128.png
 	inkscape riech-o-mat.svg --export-dpi 120 --export-png riech-o-mat-64.png
