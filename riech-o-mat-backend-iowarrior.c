@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 
 #define version "Riech-O-Mat Linux Backend 1.0"
@@ -68,6 +69,51 @@ int isValveOnChar(char c) {
 	}
 }
 
+/* Returns true if OK. */
+bool
+checkValvesPositions (const char *valves_positions)
+{
+	bool basic_error = false;
+	int i;
+
+	if (strlen (valves_positions) != 5)
+	{
+		basic_error = true;
+		goto handle_basic_error;
+	}
+
+	for (i = 0; i < 5; i++)
+	{
+		if (valves_positions[i] != '0' &&
+		    valves_positions[i] != '1')
+		{
+			basic_error = true;
+			goto handle_basic_error;
+		}
+	}
+
+handle_basic_error:
+	if (basic_error)
+	{
+		fprintf (stderr,
+			 "\"%s\" is an invalid valves_positions, it must contain five 0's and 1's.\n",
+			 valves_positions);
+		return false;
+	}
+
+	if (strcmp (valves_positions, "10000") == 0)
+	{
+		fprintf (stderr,
+			 "\"10000\" is an invalid valves_positions, because it opens *only* the airflow valve, "
+			 "which can destroy the olfactometer because the pressure builds up.\n"
+			 "So \"10000\" has not been executed.\n"
+			 "See section 2. \"Understanding your Riech-O-Mat\" in the manual for more details.\n");
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * main
  */
@@ -77,31 +123,34 @@ int main ( int argc, char *argv[] ){
     if ( argc != 2 ) /* argc should be 2 for correct execution */
     {
         fprintf(stderr,"usage: %s valve_position\ne.g. \"./riech-o-mat 11000\"\n", argv[0] );
+	return 1;
     }
-    else 
+
+    if (!checkValvesPositions (argv[1]))
     {
-	/* Open device*/
-	devHandle = IowKitOpenDevice();
-	if (devHandle == NULL) {
-		fprintf(stderr, "Error opening device \"iowarior\". make sure it's connected.\n");
-		exit(1);
-	}
-
-	/* Convert command line arg to dword*/
-	DWORD valvepos = 0xFFFF;
-	int bitpos = 0;
-	char* cp;
-	for (cp = argv[1]; *cp != 0; ++cp, ++bitpos) {
-		DWORD bit = (isValveOnChar(*cp) ? 1 : 0);
-		valvepos = valvepos ^ (bit << bitpos); 
-	} 
-
-	iowHandle = IowKitGetDeviceHandle(1);
-	IowKitSetWriteTimeout(iowHandle, 10);
-	WriteSimple(iowHandle,valvepos);
-	IowKitCloseDevice(devHandle);
-
+        return 1;
     }
-	return 0;
 
+    /* Open device*/
+    devHandle = IowKitOpenDevice();
+    if (devHandle == NULL) {
+	fprintf(stderr, "Error opening device \"iowarior\". make sure it's connected.\n");
+	exit(1);
+    }
+
+    /* Convert command line arg to dword*/
+    DWORD valvepos = 0xFFFF;
+    int bitpos = 0;
+    char* cp;
+    for (cp = argv[1]; *cp != 0; ++cp, ++bitpos) {
+	DWORD bit = (isValveOnChar(*cp) ? 1 : 0);
+	valvepos = valvepos ^ (bit << bitpos);
+    }
+
+    iowHandle = IowKitGetDeviceHandle(1);
+    IowKitSetWriteTimeout(iowHandle, 10);
+    WriteSimple(iowHandle,valvepos);
+    IowKitCloseDevice(devHandle);
+
+    return 0;
 }
