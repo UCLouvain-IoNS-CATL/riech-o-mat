@@ -11,9 +11,11 @@ riech-o-mat-backend-iowarrior: riech-o-mat-backend-iowarrior.o iowkit.o
 riech-o-mat-backend: riech-o-mat-backend-iowarrior
 	ln -s riech-o-mat-backend-iowarrior riech-o-mat-backend
 
+# Run this target as root.
 install-udev-rule:
 	cp 99-iowarrior.rules /etc/udev/rules.d/
 
+# Run this target as simple user.
 install-desktop-entry:
 	cp riech-o-mat.desktop ~/.local/share/applications/
 
